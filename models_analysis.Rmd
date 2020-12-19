@@ -1,0 +1,12 @@
+---
+title: "Scientific report - "
+author: ""
+date: "12/18/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+cobap <- rio::import(here::here("data", "Public-Facing Data Format Draft COBAP_Dec7.xlsx"))
+```

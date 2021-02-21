@@ -4,12 +4,14 @@ library(readr)
 library(dplyr)
 library(readxl)
 library(tidyr)
+library(rio)
 
 ## personal - just setting my working directory 
-setwd("~/Dropbox/COBAP/Data/")
+getwd()
+setwd("/Users/thuyn/Desktop/cobap_scientific_report/data")
 
 ## importing data
-covidvar <- read_excel("Worldometer_2020.06.13_download.xlsx", 
+covidvar <- read_excel("Worldometer_2020.06.13_download_m.xlsx", 
                                               skip = 2)
 wgidataset <- read_excel("wgidataset.xlsx", 
                          sheet = "GovernmentEffectiveness", col_names = TRUE, 
@@ -103,7 +105,8 @@ lscore <- logistics[c(2,7)]
 lscore <- rename(lscore, logisics_score = "2018 [YR2018]")
 lscore <- rename(lscore, Code = "Country Code")
 
-mydataset <- merge(mydataset, lscore, by = "Code")
+mydataset <- merge(mydataset, lscore, by = "Code") %>% 
+  rename("ISO3" = Code) 
 
+colnames(mydataset)
 
- 

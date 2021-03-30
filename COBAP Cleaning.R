@@ -110,3 +110,4 @@ mydataset <- merge(mydataset, lscore, by = "Code") %>%
 
 colnames(mydataset)
 
+saveRDS(mydataset, "coviddata.RDS")

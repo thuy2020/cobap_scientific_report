@@ -6,16 +6,20 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(tidyverse)
+```
 
-# join with cobap data # Matt updated on Slack # immigration-policy-response-to-covid-19 
-#"Matt Amme  8:37 PM Public facing data is updated on github/dataverse/google docs as of 11:00PM Eastern 2/14"
-cobap <- rio::import(here::here("data", "Public-Facing Data Format Draft COBAP-2.xlsx")) %>%   select(ISO3, COUNTRY_NAME, POLICY_TYPE, POLICY_SUBTYPE, START_DATE, END_DATE)
+```{r include=FALSE}
+# updated May 2, 2021
+cobap <- rio::import(here::here("data", "policy_list.csv")) %>%   select(ISO3, COUNTRY_NAME, POLICY_TYPE, POLICY_SUBTYPE, START_DATE, END_DATE)
 
-data <- left_join(cobap, mydataset) %>% 
+control_data <- readRDS("coviddata.RDS") # control Vars
+
+data <- left_join(cobap, control_data ) %>% 
   drop_na() 
 
-#convert some colimns to correct types
+#convert some columns to correct types
 data[, 9:ncol(data)] <- lapply(9:ncol(data), function(x) 
                                as.numeric(data[[x]]))
 data[, 3:4] <- lapply(3:4, function(x) 
@@ -26,12 +30,11 @@ data[, 3:4] <- lapply(3:4, function(x)
 data <- data %>% 
   mutate(START_DATE = lubridate::mdy(data$START_DATE), 
          END_DATE = lubridate::mdy(data$END_DATE))
-head(data)
 ```
 
-"In the multiple regression analysis, Covid-19 mortality rate was regressed on Covid-19 test number, case number, critical case rate, government effectiveness score, proportion of population aged 65 or older, number of beds, deaths attributable to communicable diseases, and transport infrastructure quality score." (p.2)
-
-Note that the result doesn't match perfectly with the result table in Liang's paper, but it's in the same direction. This might be due to differences in data gathering. 
+### Replication of Liang's et al.
+ 
+"In the multiple regression analysis, Covid-19 mortality rate was regressed on Covid-19 test number, case number, critical case rate, government effectiveness score, proportion of population aged 65 or older, number of beds, deaths attributable to communicable diseases, and transport infrastructure quality score." (Liang, et al, p.2)
 
 ```{r replication}
 # multiple regression
@@ -39,9 +42,11 @@ model1 <- lm(mortalityrate ~ `tests/100` + `cases/1000` + `critical case rate` +
                `Score` + `population_65_percent` + beds + `death_communicable_disease`+
                logisics_score,
                data = data)
-
 summary(model1)
 ```
+### Adding POLICY_TYPE in COBAP data
+
+A multiple linear regression was run to examine the relationship between mortality rate and border closure policy type after controlling for Covid-19 test number, case number, critical case rate, government effectiveness score, proportion of the population aged 65 or older, number of beds, deaths attributable to communicable diseases, and transport infrastructure quality score. Changing POLICY_TYPE from COMPLETE to PARTIAl significantly lower the mortality rate by 0.087 (sd = 0.04), t(567) = -2.1, p = 0.03. 
 
 ```{r adding cobap}
 # POLICY_TYPE 
@@ -53,15 +58,14 @@ model_policytype <- lm(mortalityrate ~ POLICY_TYPE + `tests/100` + `cases/1000` 
 summary(model_policytype)
 ```
 
-The relation between POLICY_TYPE and mortality rate disappeared during the peak week (2020-03-15 ~ 2020-03-15) when 151 policies were issued.
-```{r}
+```{r include=FALSE}
 # date
 model_policytype <- lm(mortalityrate ~ POLICY_TYPE + `tests/100` + `cases/1000` + `critical case rate` +
                `Score` + `population_65_percent` + beds + `death_communicable_disease`+
                logisics_score,
                data = data)
 head(data)
-# during the week 2020-03-15 ~ 2020-03-15 , 151 policies were issued 
+# during the week 2020-03-15 ~ 2020-03-21 , 144 policies were issued 
 peaktime <- data %>% 
   add_count(week = lubridate::floor_date(START_DATE, "week")) %>% 
   filter(week == "2020-03-15")
@@ -71,21 +75,21 @@ model_policytype_peaktime <- lm(mortalityrate ~ POLICY_TYPE + `tests/100` + `cas
                logisics_score,
                data = peaktime)
 summary(model_policytype_peaktime)
-  
 ```
-Considering other weeks with more than 50 policies issued/week. 
+### During the weeks of more than 50 policies issued
+
+When considering only weeks in which more than 50 policies were issued per week worldwide, the above effect of POLICY_TYPE changed its direction, but was no longer significant. b1 = 0.01, sd = 0.07, t(198) = 0.16, p = 0.87. 
+
 ```{r}
-# during the weeks that had more than 50 policies issued/ week
+# during the weeks that had more than 50 policies issued/ week -> 214 policies
   week_morethan50 <- data %>% 
   add_count(week = lubridate::floor_date(START_DATE, "week")) %>% 
   arrange(desc(n)) %>% 
   filter(n > 50)
 
-model_policytype_week_morethan50 <- lm(mortalityrate ~ POLICY_TYPE + `tests/100` + `cases/1000` + `critical case rate` +
-               `Score` + `population_65_percent` + beds + `death_communicable_disease`+
+model_policytype_week_morethan50 <- lm(mortalityrate ~ POLICY_TYPE + `tests/100` + `cases/1000` + `critical case rate` + `Score` + `population_65_percent` + beds + `death_communicable_disease`+
                logisics_score,
                data = week_morethan50)
 summary(model_policytype_week_morethan50)
-
 ```
 

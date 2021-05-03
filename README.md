@@ -1,8 +1,19 @@
 
 ## Multiple linear regression model
 
-This model is to examine the relationship between countries’ mortality
-rate and border closure policy type due to COVID-19.
+I run a multiple regression to examine the relationship between
+countries’ mortality rate and border closure policy type due to
+COVID-19.
+
+**Outcome**: Countries’ mortarity rate.
+
+**Predictor**: Border closure policy type during the pandemic year
+(complete closure vs. partial closure).
+
+**Controlled variables**: test number, case number, critical case rate,
+government effectiveness score, proportion of population aged 65 or
+older, number of hospital beds, number of deaths attributable to
+communicable diseases, and transport infrastructure quality score.
 
 ### Data
 
@@ -10,7 +21,7 @@ rate and border closure policy type due to COVID-19.
 # Source:  https://doi.org/10.7910/DVN/U6DJAC updated May 2, 2021
 cobap <- rio::import(here::here("data", "policy_list.csv")) %>%   select(ISO3, COUNTRY_NAME, POLICY_TYPE, POLICY_SUBTYPE, START_DATE, END_DATE)
 
-control_data <- readRDS("coviddata.RDS") # control Variables
+control_data <- readRDS("coviddata.RDS") # control Variables - This data is prepared by Mark A. Weiss
 
 data <- left_join(cobap, control_data ) %>% 
   drop_na() 
@@ -22,7 +33,6 @@ data[, 3:4] <- lapply(3:4, function(x)
                                as.factor(data[[x]]))
 
 # date variables
-
 data <- data %>% 
   mutate(START_DATE = lubridate::mdy(data$START_DATE), 
          END_DATE = lubridate::mdy(data$END_DATE))
